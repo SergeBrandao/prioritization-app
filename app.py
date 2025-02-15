@@ -42,6 +42,8 @@ def choose_winner(winner):
     if st.session_state.current_pair >= len(st.session_state.pairs):
         st.session_state.finished = True
 
+    st.rerun()  # Исправленный вызов вместо st.experimental_rerun()
+
 # Показываем текущую пару
 if not st.session_state.finished and st.session_state.current_pair < len(st.session_state.pairs):
     f1, f2 = st.session_state.pairs[st.session_state.current_pair]
@@ -51,15 +53,12 @@ if not st.session_state.finished and st.session_state.current_pair < len(st.sess
     with col1:
         if st.button(f1, key=f"btn_{f1}_{f2}"):
             choose_winner(f1)
-            st.experimental_rerun()
     with col2:
         if st.button("Ничья", key=f"btn_draw_{f1}_{f2}"):
             choose_winner("ничья")
-            st.experimental_rerun()
     with col3:
         if st.button(f2, key=f"btn_{f2}_{f1}"):
             choose_winner(f2)
-            st.experimental_rerun()
 else:
     # Сортируем и показываем результаты
     st.subheader("Ранжирование факторов:")
