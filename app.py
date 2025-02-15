@@ -11,20 +11,21 @@ file_name = st.text_input("Введите название файла:", "рез
 
 # Поле для ввода факторов (по одному на строку)
 factors_input = st.text_area("Введите факторы (каждый на новой строке):")
-factors = [f.strip() for f in factors_input.split("\n") if f.strip()]
 
-# Проверка: нужно минимум 2 фактора
-if len(factors) < 2:
-    st.warning("Введите как минимум 2 фактора!")
-    st.stop()
-
-# Инициализация переменных
-if "scores" not in st.session_state:
-    st.session_state.scores = {factor: 0 for factor in factors}
-    st.session_state.pairs = list(itertools.combinations(factors, 2))
+# Кнопка для подтверждения ввода факторов
+if st.button("✅ Подтвердить ввод факторов"):
+    st.session_state.factors = [f.strip() for f in factors_input.split("\n") if f.strip()]
+    st.session_state.scores = {factor: 0 for factor in st.session_state.factors}
+    st.session_state.pairs = list(itertools.combinations(st.session_state.factors, 2))
     random.shuffle(st.session_state.pairs)
     st.session_state.current_pair = 0
     st.session_state.finished = False
+    st.rerun()  # Обновляет страницу после нажатия кнопки
+
+# Проверяем, есть ли уже введённые факторы
+if "factors" not in st.session_state or len(st.session_state.factors) < 2:
+    st.warning("Введите как минимум 2 фактора и нажмите '✅ Подтвердить ввод факторов'!")
+    st.stop()
 
 # Функция обработки выбора
 def choose_winner(winner):
