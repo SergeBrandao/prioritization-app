@@ -17,43 +17,47 @@ if len(factors) < 2:
     st.warning("Введите как минимум 2 фактора!")
     st.stop()
 
-# Инициализация баллов
+# Инициализация переменных в session_state
 if "scores" not in st.session_state:
     st.session_state.scores = {factor: 0 for factor in factors}
     st.session_state.pairs = list(itertools.combinations(factors, 2))  # Генерация всех пар
     random.shuffle(st.session_state.pairs)  # Перемешиваем пары
-    st.session_state.current_pair = 0  # Текущая пара
+    st.session_state.current_pair = 0  # Начинаем с первой пары
+    st.session_state.finished = False  # Флаг завершения
 
 # Функция обработки выбора
 def choose_winner(winner):
-    f1, f2 = st.session_state.pairs[st.session_state.current_pair]
-    
-    if winner == "ничья":
-        st.session_state.scores[f1] += 0.5
-        st.session_state.scores[f2] += 0.5
-    else:
-        st.session_state.scores[winner] += 1
+    if st.session_state.current_pair < len(st.session_state.pairs):
+        f1, f2 = st.session_state.pairs[st.session_state.current_pair]
+        
+        if winner == "ничья":
+            st.session_state.scores[f1] += 0.5
+            st.session_state.scores[f2] += 0.5
+        else:
+            st.session_state.scores[winner] += 1
 
-    st.session_state.current_pair += 1  # Переход к следующей паре
+        st.session_state.current_pair += 1  # Переход к следующей паре
+
+    # Проверяем, закончились ли все пары
     if st.session_state.current_pair >= len(st.session_state.pairs):
-        st.session_state.finished = True  # Завершение сравнений
+        st.session_state.finished = True
 
 # Показываем текущую пару
-if "finished" not in st.session_state:
+if not st.session_state.finished and st.session_state.current_pair < len(st.session_state.pairs):
     f1, f2 = st.session_state.pairs[st.session_state.current_pair]
     st.write("Какой фактор важнее?")
     
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button(f1):
+        if st.button(f1, key=f"btn_{f1}_{f2}"):
             choose_winner(f1)
             st.experimental_rerun()
     with col2:
-        if st.button("Ничья"):
+        if st.button("Ничья", key=f"btn_draw_{f1}_{f2}"):
             choose_winner("ничья")
             st.experimental_rerun()
     with col3:
-        if st.button(f2):
+        if st.button(f2, key=f"btn_{f2}_{f1}"):
             choose_winner(f2)
             st.experimental_rerun()
 else:
