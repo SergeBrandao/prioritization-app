@@ -41,7 +41,7 @@ previous_winner = st.session_state.comparison_history.get(pair_key, None)
 def choose_winner(winner):
     st.session_state.selected_winner = winner
 
-# Функция подтверждения выбора (исправленный код)
+# Функция подтверждения выбора
 def confirm_choice():
     global previous_winner
 
@@ -62,12 +62,12 @@ def confirm_choice():
         st.session_state.comparison_history[pair_key] = st.session_state.selected_winner
         st.session_state.selected_winner = None
 
-# Функция изменения выбора (исправленный код)
+# Функция изменения выбора
 def change_choice():
     st.session_state.selected_winner = None
     st.session_state.comparison_history[pair_key] = None
 
-# Функция перемещения по парам
+# **Функция навигации между парами**
 def move_to(index):
     if 0 <= index < total_pairs:
         st.session_state.current_pair = index
@@ -78,7 +78,7 @@ st.subheader(f"Прогресс: {current_pair_index + 1} / {total_pairs} пар
 
 st.write(f"Какой фактор важнее?")
 
-# Стилизация выбора (добавление синей рамки)
+# **Кнопки выбора с синей рамкой**
 def styled_button(text, key, is_selected):
     button_html = f"""
     <div style="
@@ -117,6 +117,17 @@ else:
 if st.session_state.selected_winner is not None:
     st.button("✅ Подтвердить", on_click=confirm_choice)
 
+# **Кнопки навигации (вернул обратно!)**
+col_home, col_back, col_next, col_end = st.columns(4)
+with col_home:
+    st.button("⏮ В начало", on_click=lambda: move_to(0))
+with col_back:
+    st.button("⬅ Назад", on_click=lambda: move_to(current_pair_index - 1))
+with col_next:
+    st.button("➡ Вперёд", on_click=lambda: move_to(current_pair_index + 1))
+with col_end:
+    st.button("⏭ В конец", on_click=lambda: move_to(total_pairs - 1))
+
 # Проверка завершения всех сравнений
 if all(value is not None for value in st.session_state.comparison_history.values()) and len(st.session_state.comparison_history) == total_pairs:
     st.subheader("Ранжирование факторов:")
@@ -124,7 +135,7 @@ if all(value is not None for value in st.session_state.comparison_history.values
     for factor, score in sorted_factors:
         st.write(f"**{factor}**: {score} баллов")
 
-    # Файлы Excel (исправленный код)
+    # **Файлы Excel (исправленный код)**
     df_ranking = pd.DataFrame(sorted_factors, columns=["Фактор", "Баллы"])
     df_history = pd.DataFrame([
         [idx + 1, pair.split("-")[0], 1 if winner == pair.split("-")[0] else 0.5 if winner == "ничья" else 0, 
