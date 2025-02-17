@@ -55,8 +55,8 @@ def confirm_choice():
         elif previous_winner in st.session_state.scores:
             st.session_state.scores[previous_winner] -= 1
 
-    # Проверяем, что выбранный вариант существует в словаре
-    if st.session_state.selected_winner and st.session_state.selected_winner in st.session_state.scores:
+    # Записываем новый выбор
+    if st.session_state.selected_winner is not None:  # ✅ Проверяем, что "ничья" тоже засчитывается
         if st.session_state.selected_winner == "ничья":
             st.session_state.scores[f1] += 0.5
             st.session_state.scores[f2] += 0.5
@@ -73,67 +73,26 @@ def change_choice():
     st.session_state.comparison_history[pair_key] = None  # Сброс выбора для текущей пары
     st.rerun()
 
-# Функция перемещения по парам
-def move_to(index):
-    if 0 <= index < total_pairs:
-        st.session_state.current_pair = index
-        st.session_state.selected_winner = None
-        st.rerun()
-
 # Показываем текущий прогресс
 st.subheader(f"Прогресс: {current_pair_index + 1} / {total_pairs} пар")
 
 st.write(f"Какой фактор важнее?")
 
-# Стилизация выбора (добавление рамки)
-def styled_button(text, key, is_selected):
-    button_html = f"""
-    <div style="
-        padding: 10px;
-        border: {'3px solid blue' if is_selected else '1px solid gray'};
-        border-radius: 10px;
-        text-align: center;
-        font-size: 16px;
-        background-color: white;
-        cursor: pointer;
-        margin-bottom: 10px;">
-        {text}
-    </div>
-    """
-    return st.markdown(button_html, unsafe_allow_html=True) if is_selected else st.button(text, key=key, on_click=lambda: choose_winner(text))
+# Кнопки выбора
+col1, col2, col3 = st.columns(3)
+with col1:
+    if st.button(f1, key=f"btn_{f1}_{f2}"):
+        choose_winner(f1)
+with col2:
+    if st.button("Ничья", key=f"btn_draw_{f1}_{f2}"):
+        choose_winner("ничья")
+with col3:
+    if st.button(f2, key=f"btn_{f2}_{f1}"):
+        choose_winner(f2)
 
-if previous_winner is None:
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        styled_button(f1, f"btn_{f1}_{f2}", False)
-    with col2:
-        styled_button("Ничья", f"btn_draw_{f1}_{f2}", False)
-    with col3:
-        styled_button(f2, f"btn_{f2}_{f1}", False)
-else:
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        styled_button(f1, f"btn_{f1}_{f2}", previous_winner == f1)
-    with col2:
-        styled_button("Ничья", f"btn_draw_{f1}_{f2}", previous_winner == "ничья")
-    with col3:
-        styled_button(f2, f"btn_{f2}_{f1}", previous_winner == f2)
-
-    st.button("🔄 Изменить выбор", on_click=change_choice)
-
-if st.session_state.selected_winner:
+# Кнопка подтверждения
+if st.session_state.selected_winner is not None:
     st.button("✅ Подтвердить", on_click=confirm_choice)
-
-# Кнопки навигации
-col_back, col_home, col_end, col_next = st.columns(4)
-with col_home:
-    st.button("⏮ В начало", on_click=lambda: move_to(0))
-with col_back:
-    st.button("⬅ Назад", on_click=lambda: move_to(current_pair_index - 1))
-with col_next:
-    st.button("➡ Вперёд", on_click=lambda: move_to(current_pair_index + 1))
-with col_end:
-    st.button("⏭ В конец", on_click=lambda: move_to(total_pairs - 1))
 
 # Проверка завершения всех сравнений
 if all(value is not None for value in st.session_state.comparison_history.values()) and len(st.session_state.comparison_history) == total_pairs:
