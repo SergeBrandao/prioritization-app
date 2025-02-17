@@ -22,7 +22,6 @@ if st.button("✅ Подтвердить ввод факторов"):
     st.session_state.total_pairs = len(st.session_state.pairs)
     st.session_state.comparison_history = {}
     st.session_state.selected_winner = None
-    st.rerun()
 
 # Проверяем, есть ли уже введённые факторы
 if "factors" not in st.session_state or len(st.session_state.factors) < 2:
@@ -46,7 +45,6 @@ def choose_winner(winner):
 def confirm_choice():
     global previous_winner
 
-    # Удаляем старый выбор перед записью нового
     if previous_winner:
         if previous_winner == "ничья":
             st.session_state.scores[f1] -= 0.5
@@ -54,7 +52,6 @@ def confirm_choice():
         elif previous_winner in st.session_state.scores:
             st.session_state.scores[previous_winner] -= 1
 
-    # Записываем новый выбор
     if st.session_state.selected_winner is not None:
         if st.session_state.selected_winner == "ничья":
             st.session_state.scores[f1] += 0.5
@@ -64,27 +61,24 @@ def confirm_choice():
 
         st.session_state.comparison_history[pair_key] = st.session_state.selected_winner
         st.session_state.selected_winner = None
-        st.rerun()
 
-# Функция изменения выбора
+# Функция изменения выбора (исправленный код)
 def change_choice():
     st.session_state.selected_winner = None
     st.session_state.comparison_history[pair_key] = None
-    st.rerun()
 
 # Функция перемещения по парам
 def move_to(index):
     if 0 <= index < total_pairs:
         st.session_state.current_pair = index
         st.session_state.selected_winner = None
-        st.rerun()
 
 # Показываем текущий прогресс
 st.subheader(f"Прогресс: {current_pair_index + 1} / {total_pairs} пар")
 
 st.write(f"Какой фактор важнее?")
 
-# Стилизация выбора (добавление синей рамки, исправленный код)
+# Стилизация выбора (добавление синей рамки)
 def styled_button(text, key, is_selected):
     button_html = f"""
     <div style="
