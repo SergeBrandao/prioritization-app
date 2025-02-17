@@ -43,7 +43,7 @@ previous_winner = st.session_state.comparison_history.get(pair_key, None)
 def choose_winner(winner):
     st.session_state.selected_winner = winner
 
-# Функция подтверждения выбора
+# Функция подтверждения выбора (с полной корректировкой баллов)
 def confirm_choice():
     global previous_winner
 
@@ -144,21 +144,11 @@ if all(value is not None for value in st.session_state.comparison_history.values
 
     # Файлы Excel
     df_ranking = pd.DataFrame(sorted_factors, columns=["Фактор", "Баллы"])
-    output_ranking = io.BytesIO()
-    with pd.ExcelWriter(output_ranking, engine="openpyxl") as writer:
-        df_ranking.to_excel(writer, index=False)
-    output_ranking.seek(0)
-
     df_history = pd.DataFrame([
         [idx + 1, pair.split("-")[0], 1 if winner == pair.split("-")[0] else 0.5 if winner == "ничья" else 0, 
          pair.split("-")[1], 1 if winner == pair.split("-")[1] else 0.5 if winner == "ничья" else 0]
         for idx, (pair, winner) in enumerate(st.session_state.comparison_history.items())
     ], columns=["№ пары", "Фактор 1", "Балл 1", "Фактор 2", "Балл 2"])
 
-    output_history = io.BytesIO()
-    with pd.ExcelWriter(output_history, engine="openpyxl") as writer:
-        df_history.to_excel(writer, index=False)
-    output_history.seek(0)
-
-    st.download_button("📥 Скачать результаты в Excel", data=output_ranking, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    st.download_button("📥 Скачать историю сравнений в Excel", data=output_history, file_name=f"история_{file_name}", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    st.download_button("📥 Скачать результаты в Excel", data=df_ranking.to_csv(index=False).encode(), file_name=file_name)
+    st.download_button("📥 Скачать историю сравнений", data=df_history.to_csv(index=False).encode(), file_name=f"история_{file_name}")
