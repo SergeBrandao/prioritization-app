@@ -20,7 +20,6 @@ if st.button("✅ Подтвердить ввод факторов"):
     random.shuffle(st.session_state.pairs)
     st.session_state.current_pair = 0
     st.session_state.total_pairs = len(st.session_state.pairs)
-    st.session_state.finished = False
     st.session_state.comparison_history = {}
     st.session_state.selected_winner = None
     st.rerun()
@@ -43,12 +42,12 @@ previous_winner = st.session_state.comparison_history.get(pair_key, None)
 def choose_winner(winner):
     st.session_state.selected_winner = winner
 
-# Функция подтверждения выбора (с полной корректировкой баллов)
+# Функция подтверждения выбора (исправленный код)
 def confirm_choice():
     global previous_winner
 
+    # Удаляем старый выбор перед записью нового
     if previous_winner:
-        # Отменяем старый выбор перед записью нового
         if previous_winner == "ничья":
             st.session_state.scores[f1] -= 0.5
             st.session_state.scores[f2] -= 0.5
@@ -85,7 +84,7 @@ st.subheader(f"Прогресс: {current_pair_index + 1} / {total_pairs} пар
 
 st.write(f"Какой фактор важнее?")
 
-# Стилизация выбора (добавление синей рамки)
+# Стилизация выбора (добавление синей рамки, исправленный код)
 def styled_button(text, key, is_selected):
     button_html = f"""
     <div style="
@@ -124,17 +123,6 @@ else:
 if st.session_state.selected_winner is not None:
     st.button("✅ Подтвердить", on_click=confirm_choice)
 
-# Кнопки навигации
-col_back, col_home, col_end, col_next = st.columns(4)
-with col_home:
-    st.button("⏮ В начало", on_click=lambda: move_to(0))
-with col_back:
-    st.button("⬅ Назад", on_click=lambda: move_to(current_pair_index - 1))
-with col_next:
-    st.button("➡ Вперёд", on_click=lambda: move_to(current_pair_index + 1))
-with col_end:
-    st.button("⏭ В конец", on_click=lambda: move_to(total_pairs - 1))
-
 # Проверка завершения всех сравнений
 if all(value is not None for value in st.session_state.comparison_history.values()) and len(st.session_state.comparison_history) == total_pairs:
     st.subheader("Ранжирование факторов:")
@@ -142,7 +130,7 @@ if all(value is not None for value in st.session_state.comparison_history.values
     for factor, score in sorted_factors:
         st.write(f"**{factor}**: {score} баллов")
 
-    # Файлы Excel
+    # Файлы Excel (исправленный код)
     df_ranking = pd.DataFrame(sorted_factors, columns=["Фактор", "Баллы"])
     df_history = pd.DataFrame([
         [idx + 1, pair.split("-")[0], 1 if winner == pair.split("-")[0] else 0.5 if winner == "ничья" else 0, 
@@ -150,5 +138,10 @@ if all(value is not None for value in st.session_state.comparison_history.values
         for idx, (pair, winner) in enumerate(st.session_state.comparison_history.items())
     ], columns=["№ пары", "Фактор 1", "Балл 1", "Фактор 2", "Балл 2"])
 
-    st.download_button("📥 Скачать результаты в Excel", data=df_ranking.to_csv(index=False).encode(), file_name=file_name)
-    st.download_button("📥 Скачать историю сравнений", data=df_history.to_csv(index=False).encode(), file_name=f"история_{file_name}")
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df_ranking.to_excel(writer, index=False, sheet_name="Ранжирование")
+        df_history.to_excel(writer, index=False, sheet_name="История сравнений")
+    output.seek(0)
+
+    st.download_button("📥 Скачать Excel", data=output, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
