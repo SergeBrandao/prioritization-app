@@ -52,19 +52,20 @@ def confirm_choice():
         if previous_winner == "ничья":
             st.session_state.scores[f1] -= 0.5
             st.session_state.scores[f2] -= 0.5
-        else:
+        elif previous_winner in st.session_state.scores:
             st.session_state.scores[previous_winner] -= 1
 
-    # Записываем новый выбор
-    if st.session_state.selected_winner == "ничья":
-        st.session_state.scores[f1] += 0.5
-        st.session_state.scores[f2] += 0.5
-    else:
-        st.session_state.scores[st.session_state.selected_winner] += 1
+    # Проверяем, что выбранный вариант существует в словаре
+    if st.session_state.selected_winner and st.session_state.selected_winner in st.session_state.scores:
+        if st.session_state.selected_winner == "ничья":
+            st.session_state.scores[f1] += 0.5
+            st.session_state.scores[f2] += 0.5
+        else:
+            st.session_state.scores[st.session_state.selected_winner] += 1
 
-    st.session_state.comparison_history[pair_key] = st.session_state.selected_winner
-    st.session_state.selected_winner = None
-    st.rerun()
+        st.session_state.comparison_history[pair_key] = st.session_state.selected_winner
+        st.session_state.selected_winner = None
+        st.rerun()
 
 # Функция изменения выбора
 def change_choice():
