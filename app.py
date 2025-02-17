@@ -21,8 +21,8 @@ if st.button("✅ Подтвердить ввод факторов"):
     st.session_state.current_pair = 0
     st.session_state.total_pairs = len(st.session_state.pairs)
     st.session_state.finished = False
-    st.session_state.comparison_history = {}
-    st.session_state.selected_winner = None  # Хранит временный выбор пользователя
+    st.session_state.comparison_history = {}  # Хранение подтверждённых результатов
+    st.session_state.selected_winner = None  # Временный выбор пользователя
     st.rerun()
 
 # Проверяем, есть ли уже введённые факторы
@@ -35,9 +35,9 @@ current_pair_index = st.session_state.current_pair
 total_pairs = st.session_state.total_pairs
 f1, f2 = st.session_state.pairs[current_pair_index]
 
-# Временное сохранение выбора
-if f"{f1}-{f2}" not in st.session_state.comparison_history:
-    st.session_state.comparison_history[f"{f1}-{f2}"] = None  # По умолчанию нет выбора
+# Проверяем, есть ли уже сделанный выбор
+pair_key = f"{f1}-{f2}"
+previous_winner = st.session_state.comparison_history.get(pair_key, None)
 
 # Функция обработки выбора
 def choose_winner(winner):
@@ -45,11 +45,10 @@ def choose_winner(winner):
 
 # Функция подтверждения выбора
 def confirm_choice():
-    pair_key = f"{f1}-{f2}"
-    previous_winner = st.session_state.comparison_history[pair_key]
+    global previous_winner
 
     if previous_winner:
-        # Отменяем предыдущий выбор
+        # Отменяем старое решение перед записью нового
         if previous_winner == "ничья":
             st.session_state.scores[f1] -= 0.5
             st.session_state.scores[f2] -= 0.5
@@ -67,6 +66,12 @@ def confirm_choice():
     st.session_state.selected_winner = None  # Очистка временного выбора
     st.rerun()
 
+# Функция изменения выбора
+def change_choice():
+    st.session_state.selected_winner = None
+    st.session_state.comparison_history[pair_key] = None  # Сброс выбора для текущей пары
+    st.rerun()
+
 # Функция перемещения по парам
 def move_to(index):
     if 0 <= index < total_pairs:
@@ -74,21 +79,27 @@ def move_to(index):
         st.session_state.selected_winner = None  # Сбрасываем временный выбор
         st.rerun()
 
-# Показываем текущую пару и выбор пользователя
+# Показываем текущий прогресс
 st.subheader(f"Прогресс: {current_pair_index + 1} / {total_pairs} пар")
 
 st.write(f"Какой фактор важнее?")
-col1, col2, col3 = st.columns(3)
 
-with col1:
-    if st.button(f1, key=f"btn_{f1}_{f2}"):
-        choose_winner(f1)
-with col2:
-    if st.button("Ничья", key=f"btn_draw_{f1}_{f2}"):
-        choose_winner("ничья")
-with col3:
-    if st.button(f2, key=f"btn_{f2}_{f1}"):
-        choose_winner(f2)
+if previous_winner is None:
+    # Если выбор ещё не сделан, показываем кнопки выбора
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button(f1, key=f"btn_{f1}_{f2}"):
+            choose_winner(f1)
+    with col2:
+        if st.button("Ничья", key=f"btn_draw_{f1}_{f2}"):
+            choose_winner("ничья")
+    with col3:
+        if st.button(f2, key=f"btn_{f2}_{f1}"):
+            choose_winner(f2)
+else:
+    # Если выбор сделан, показываем кнопку "Изменить"
+    st.write(f"Вы уже выбрали: **{previous_winner}**")
+    st.button("🔄 Изменить выбор", on_click=change_choice)
 
 # Кнопки подтверждения выбора
 if st.session_state.selected_winner:
@@ -106,8 +117,8 @@ with col_next:
 with col_end:
     st.button("⏭ В конец", on_click=lambda: move_to(total_pairs - 1))
 
-# Показываем кнопки скачивания после завершения всех сравнений
-if all(value is not None for value in st.session_state.comparison_history.values()):
+# Показываем итоги ТОЛЬКО если ВСЕ сравнения завершены
+if all(value is not None for value in st.session_state.comparison_history.values()) and len(st.session_state.comparison_history) == total_pairs:
     st.subheader("Ранжирование факторов:")
     sorted_factors = sorted(st.session_state.scores.items(), key=lambda x: x[1], reverse=True)
     for factor, score in sorted_factors:
