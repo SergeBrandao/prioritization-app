@@ -19,8 +19,9 @@ if st.button("✅ Подтвердить ввод факторов"):
     st.session_state.pairs = list(itertools.combinations(st.session_state.factors, 2))
     random.shuffle(st.session_state.pairs)
     st.session_state.current_pair = 0
+    st.session_state.total_pairs = len(st.session_state.pairs)  # Общее кол-во пар
     st.session_state.finished = False
-    st.rerun()  # Обновляет страницу после нажатия кнопки
+    st.rerun()
 
 # Проверяем, есть ли уже введённые факторы
 if "factors" not in st.session_state or len(st.session_state.factors) < 2:
@@ -29,7 +30,7 @@ if "factors" not in st.session_state or len(st.session_state.factors) < 2:
 
 # Функция обработки выбора
 def choose_winner(winner):
-    if st.session_state.current_pair < len(st.session_state.pairs):
+    if st.session_state.current_pair < st.session_state.total_pairs:
         f1, f2 = st.session_state.pairs[st.session_state.current_pair]
 
         if winner == "ничья":
@@ -40,13 +41,16 @@ def choose_winner(winner):
 
         st.session_state.current_pair += 1
 
-    if st.session_state.current_pair >= len(st.session_state.pairs):
+    if st.session_state.current_pair >= st.session_state.total_pairs:
         st.session_state.finished = True
 
     st.rerun()
 
+# Показываем счётчик сравнения пар
+st.subheader(f"Прогресс: {st.session_state.current_pair} / {st.session_state.total_pairs} пар")
+
 # Показываем текущую пару
-if not st.session_state.finished and st.session_state.current_pair < len(st.session_state.pairs):
+if not st.session_state.finished and st.session_state.current_pair < st.session_state.total_pairs:
     f1, f2 = st.session_state.pairs[st.session_state.current_pair]
     st.write("Какой фактор важнее?")
 
