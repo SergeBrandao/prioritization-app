@@ -60,8 +60,8 @@ def confirm_choice():
         if st.session_state.selected_winner == "ничья":
             st.session_state.scores[f1] += 0.5
             st.session_state.scores[f2] += 0.5
-        else:
-            st.session_state.scores[st.session_state.selected_winner] += 1
+        elif st.session_state.selected_winner in st.session_state.scores:
+            st.session_state.scores[st.session_state.selected_winner] += 1  
 
         st.session_state.comparison_history[pair_key] = st.session_state.selected_winner
         st.session_state.selected_winner = None
@@ -85,7 +85,7 @@ st.subheader(f"Прогресс: {current_pair_index + 1} / {total_pairs} пар
 
 st.write(f"Какой фактор важнее?")
 
-# Функция для отображения кнопок с синей рамкой
+# Стилизация выбора (добавление синей рамки)
 def styled_button(text, key, is_selected):
     button_html = f"""
     <div style="
@@ -102,20 +102,25 @@ def styled_button(text, key, is_selected):
     """
     return st.markdown(button_html, unsafe_allow_html=True) if is_selected else st.button(text, key=key, on_click=lambda: choose_winner(text))
 
-# Отображение кнопок выбора
-col1, col2, col3 = st.columns(3)
-with col1:
-    styled_button(f1, f"btn_{f1}_{f2}", previous_winner == f1)
-with col2:
-    styled_button("Ничья", f"btn_draw_{f1}_{f2}", previous_winner == "ничья")
-with col3:
-    styled_button(f2, f"btn_{f2}_{f1}", previous_winner == f2)
+if previous_winner is None:
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        styled_button(f1, f"btn_{f1}_{f2}", False)
+    with col2:
+        styled_button("Ничья", f"btn_draw_{f1}_{f2}", False)
+    with col3:
+        styled_button(f2, f"btn_{f2}_{f1}", False)
+else:
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        styled_button(f1, f"btn_{f1}_{f2}", previous_winner == f1)
+    with col2:
+        styled_button("Ничья", f"btn_draw_{f1}_{f2}", previous_winner == "ничья")
+    with col3:
+        styled_button(f2, f"btn_{f2}_{f1}", previous_winner == f2)
 
-# Кнопка "Изменить"
-if previous_winner:
     st.button("🔄 Изменить выбор", on_click=change_choice)
 
-# Кнопка подтверждения выбора
 if st.session_state.selected_winner is not None:
     st.button("✅ Подтвердить", on_click=confirm_choice)
 
@@ -137,7 +142,7 @@ if all(value is not None for value in st.session_state.comparison_history.values
     for factor, score in sorted_factors:
         st.write(f"**{factor}**: {score} баллов")
 
-    # Создание файлов Excel
+    # Файлы Excel
     df_ranking = pd.DataFrame(sorted_factors, columns=["Фактор", "Баллы"])
     output_ranking = io.BytesIO()
     with pd.ExcelWriter(output_ranking, engine="openpyxl") as writer:
