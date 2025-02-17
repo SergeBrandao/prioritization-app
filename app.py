@@ -21,8 +21,8 @@ if st.button("✅ Подтвердить ввод факторов"):
     st.session_state.current_pair = 0
     st.session_state.total_pairs = len(st.session_state.pairs)
     st.session_state.finished = False
-    st.session_state.comparison_history = {}  # Хранение подтверждённых результатов
-    st.session_state.selected_winner = None  # Временный выбор пользователя
+    st.session_state.comparison_history = {}
+    st.session_state.selected_winner = None
     st.rerun()
 
 # Проверяем, есть ли уже введённые факторы
@@ -48,7 +48,7 @@ def confirm_choice():
     global previous_winner
 
     if previous_winner:
-        # Отменяем старое решение перед записью нового
+        # Отменяем старый выбор перед записью нового
         if previous_winner == "ничья":
             st.session_state.scores[f1] -= 0.5
             st.session_state.scores[f2] -= 0.5
@@ -63,7 +63,7 @@ def confirm_choice():
         st.session_state.scores[st.session_state.selected_winner] += 1
 
     st.session_state.comparison_history[pair_key] = st.session_state.selected_winner
-    st.session_state.selected_winner = None  # Очистка временного выбора
+    st.session_state.selected_winner = None
     st.rerun()
 
 # Функция изменения выбора
@@ -76,7 +76,7 @@ def change_choice():
 def move_to(index):
     if 0 <= index < total_pairs:
         st.session_state.current_pair = index
-        st.session_state.selected_winner = None  # Сбрасываем временный выбор
+        st.session_state.selected_winner = None
         st.rerun()
 
 # Показываем текущий прогресс
@@ -84,26 +84,43 @@ st.subheader(f"Прогресс: {current_pair_index + 1} / {total_pairs} пар
 
 st.write(f"Какой фактор важнее?")
 
+# Стилизация выбора (добавление рамки)
+def styled_button(text, key, is_selected):
+    button_html = f"""
+    <div style="
+        padding: 10px;
+        border: {'3px solid blue' if is_selected else '1px solid gray'};
+        border-radius: 10px;
+        text-align: center;
+        font-size: 16px;
+        background-color: white;
+        cursor: pointer;
+        margin-bottom: 10px;">
+        {text}
+    </div>
+    """
+    return st.markdown(button_html, unsafe_allow_html=True) if is_selected else st.button(text, key=key, on_click=lambda: choose_winner(text))
+
 if previous_winner is None:
-    # Если выбор ещё не сделан, показываем кнопки выбора
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button(f1, key=f"btn_{f1}_{f2}"):
-            choose_winner(f1)
+        styled_button(f1, f"btn_{f1}_{f2}", False)
     with col2:
-        if st.button("Ничья", key=f"btn_draw_{f1}_{f2}"):
-            choose_winner("ничья")
+        styled_button("Ничья", f"btn_draw_{f1}_{f2}", False)
     with col3:
-        if st.button(f2, key=f"btn_{f2}_{f1}"):
-            choose_winner(f2)
+        styled_button(f2, f"btn_{f2}_{f1}", False)
 else:
-    # Если выбор сделан, показываем кнопку "Изменить"
-    st.write(f"Вы уже выбрали: **{previous_winner}**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        styled_button(f1, f"btn_{f1}_{f2}", previous_winner == f1)
+    with col2:
+        styled_button("Ничья", f"btn_draw_{f1}_{f2}", previous_winner == "ничья")
+    with col3:
+        styled_button(f2, f"btn_{f2}_{f1}", previous_winner == f2)
+
     st.button("🔄 Изменить выбор", on_click=change_choice)
 
-# Кнопки подтверждения выбора
 if st.session_state.selected_winner:
-    st.write(f"Вы выбрали: **{st.session_state.selected_winner}**")
     st.button("✅ Подтвердить", on_click=confirm_choice)
 
 # Кнопки навигации
@@ -117,7 +134,7 @@ with col_next:
 with col_end:
     st.button("⏭ В конец", on_click=lambda: move_to(total_pairs - 1))
 
-# Показываем итоги ТОЛЬКО если ВСЕ сравнения завершены
+# Проверка завершения всех сравнений
 if all(value is not None for value in st.session_state.comparison_history.values()) and len(st.session_state.comparison_history) == total_pairs:
     st.subheader("Ранжирование факторов:")
     sorted_factors = sorted(st.session_state.scores.items(), key=lambda x: x[1], reverse=True)
@@ -136,22 +153,11 @@ if all(value is not None for value in st.session_state.comparison_history.values
          pair.split("-")[1], 1 if winner == pair.split("-")[1] else 0.5 if winner == "ничья" else 0]
         for idx, (pair, winner) in enumerate(st.session_state.comparison_history.items())
     ], columns=["№ пары", "Фактор 1", "Балл 1", "Фактор 2", "Балл 2"])
-    
+
     output_history = io.BytesIO()
     with pd.ExcelWriter(output_history, engine="openpyxl") as writer:
         df_history.to_excel(writer, index=False)
     output_history.seek(0)
 
-    st.download_button(
-        label="📥 Скачать результаты в Excel",
-        data=output_ranking,
-        file_name=file_name,
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-
-    st.download_button(
-        label="📥 Скачать историю сравнений в Excel",
-        data=output_history,
-        file_name=f"история_{file_name}",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    st.download_button("📥 Скачать результаты в Excel", data=output_ranking, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    st.download_button("📥 Скачать историю сравнений в Excel", data=output_history, file_name=f"история_{file_name}", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
