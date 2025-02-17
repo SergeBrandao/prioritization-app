@@ -9,7 +9,7 @@ st.title("Выбор приоритетного фактора")
 # Поле для ввода названия файла
 file_name = st.text_input("Введите название файла:", "результаты.xlsx")
 
-# Поле для ввода факторов (по одному на строку)
+# Поле для ввода факторов (по одному на строке)
 factors_input = st.text_area("Введите факторы (каждый на новой строке):")
 
 # Кнопка для подтверждения ввода факторов
@@ -21,6 +21,7 @@ if st.button("✅ Подтвердить ввод факторов"):
     st.session_state.current_pair = 0
     st.session_state.total_pairs = len(st.session_state.pairs)  # Общее кол-во пар
     st.session_state.finished = False
+    st.session_state.comparison_history = []  # История всех сравнений
     st.rerun()
 
 # Проверяем, есть ли уже введённые факторы
@@ -33,11 +34,15 @@ def choose_winner(winner):
     if st.session_state.current_pair < st.session_state.total_pairs:
         f1, f2 = st.session_state.pairs[st.session_state.current_pair]
 
+        # Записываем результат сравнения в историю
         if winner == "ничья":
             st.session_state.scores[f1] += 0.5
             st.session_state.scores[f2] += 0.5
+            st.session_state.comparison_history.append([st.session_state.current_pair + 1, f1, 0.5, f2, 0.5])
         else:
             st.session_state.scores[winner] += 1
+            loser = f1 if winner == f2 else f2
+            st.session_state.comparison_history.append([st.session_state.current_pair + 1, winner, 1, loser, 0])
 
         st.session_state.current_pair += 1
 
@@ -72,17 +77,32 @@ else:
     for factor, score in sorted_factors:
         st.write(f"**{factor}**: {score} баллов")
 
-    # Создание Excel-файла в памяти (без сохранения на диск)
-    df = pd.DataFrame(sorted_factors, columns=["Фактор", "Баллы"])
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False)
-    output.seek(0)
+    # Создание первого Excel-файла (ранжирование)
+    df_ranking = pd.DataFrame(sorted_factors, columns=["Фактор", "Баллы"])
+    output_ranking = io.BytesIO()
+    with pd.ExcelWriter(output_ranking, engine="openpyxl") as writer:
+        df_ranking.to_excel(writer, index=False)
+    output_ranking.seek(0)
 
-    # Кнопка для скачивания
+    # Создание второго Excel-файла (история сравнений)
+    df_history = pd.DataFrame(st.session_state.comparison_history, columns=["№ пары", "Фактор 1", "Балл 1", "Фактор 2", "Балл 2"])
+    output_history = io.BytesIO()
+    with pd.ExcelWriter(output_history, engine="openpyxl") as writer:
+        df_history.to_excel(writer, index=False)
+    output_history.seek(0)
+
+    # Кнопка для скачивания итогового файла с ранжированием
     st.download_button(
         label="📥 Скачать результаты в Excel",
-        data=output,
+        data=output_ranking,
         file_name=file_name,
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    # Кнопка для скачивания файла с историей сравнений
+    st.download_button(
+        label="📥 Скачать историю сравнений в Excel",
+        data=output_history,
+        file_name=f"история_{file_name}",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
