@@ -39,13 +39,7 @@ def choose_winner(winner):
             st.session_state.scores[f2] += 0.5
         else:
             st.session_state.scores[winner] += 1
-        st.session_state.current_pair += 1
-    if st.session_state.current_pair >= st.session_state.total_pairs:
-        st.session_state.finished = True
     st.rerun()
-
-# Показываем счётчик сравнения пар
-st.subheader(f"Прогресс: {st.session_state.current_pair} / {st.session_state.total_pairs} пар")
 
 # Функция для перемещения по сравнениям
 def move_to(index):
@@ -54,28 +48,16 @@ def move_to(index):
         st.rerun()
 
 # Показываем текущую пару
-if not st.session_state.finished and st.session_state.current_pair < st.session_state.total_pairs:
+if st.session_state.current_pair < st.session_state.total_pairs:
     f1, f2 = st.session_state.pairs[st.session_state.current_pair]
     st.write("Какой фактор важнее?")
-
     previous_winner = st.session_state.comparison_history.get((f1, f2))
     
     # Создание кнопок с подсветкой выбора
     def styled_button(text, key, is_selected):
-        button_html = f"""
-        <div style="
-            padding: 10px;
-            border: {'3px solid blue' if is_selected else '1px solid gray'};
-            border-radius: 10px;
-            text-align: center;
-            font-size: 16px;
-            background-color: white;
-            cursor: pointer;
-            margin-bottom: 10px;">
-            {text}
-        </div>
-        """
-        return st.markdown(button_html, unsafe_allow_html=True) if is_selected else st.button(text, key=key, on_click=lambda: choose_winner(text))
+        return st.button(text, key=key, help="Выбранный вариант" if is_selected else None, on_click=lambda: choose_winner(text),
+                         use_container_width=True, disabled=is_selected, 
+                         args=(text,))
     
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -84,7 +66,7 @@ if not st.session_state.finished and st.session_state.current_pair < st.session_
         styled_button("Ничья", f"btn_draw_{f1}_{f2}", previous_winner == "ничья")
     with col3:
         styled_button(f2, f"btn_{f2}_{f1}", previous_winner == f2)
-
+    
     # Кнопки навигации
     col_home, col_back, col_next, col_end = st.columns(4)
     with col_home:
@@ -95,14 +77,12 @@ if not st.session_state.finished and st.session_state.current_pair < st.session_
         st.button("➡ Вперёд", on_click=lambda: move_to(st.session_state.current_pair + 1))
     with col_end:
         st.button("⏭ В конец", on_click=lambda: move_to(st.session_state.total_pairs - 1))
-
 else:
-    # Сортируем и показываем результаты
     st.subheader("Ранжирование факторов:")
     sorted_factors = sorted(st.session_state.scores.items(), key=lambda x: x[1], reverse=True)
     for factor, score in sorted_factors:
         st.write(f"**{factor}**: {score} баллов")
-
+    
     # Создание файлов Excel
     df_ranking = pd.DataFrame(sorted_factors, columns=["Фактор", "Баллы"])
     df_history = pd.DataFrame([
